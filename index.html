@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Locales</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Locales">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icono-180.png">
+<link rel="icon" href="icono-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+
+<!-- Lista de locales -->
+<main id="vista-lista">
+  <div class="barra">
+    <span></span>
+    <div class="botones">
+      <button class="icono" id="b-horarios" aria-label="Horarios">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+      </button>
+      <button class="icono" id="b-anadir" aria-label="Añadir local">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+    </div>
+  </div>
+  <h1>Locales</h1>
+  <div class="buscador">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+    <input id="busqueda" type="search" placeholder="Busca un local"
+           autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="search">
+    <button id="b-borrar-busqueda" aria-label="Borrar búsqueda" hidden>×</button>
+  </div>
+  <ul id="lista"></ul>
+  <div id="sin-resultados" hidden>
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
+    <h2 id="sin-titulo"></h2>
+    <p>Si es una tienda nueva, puedes añadirla.</p>
+    <button class="boton-lleno" id="b-anadir-buscado"></button>
+  </div>
+</main>
+
+<!-- Ficha de un local -->
+<main id="vista-detalle" hidden>
+  <div class="barra">
+    <button class="volver" id="b-volver">
+      <svg viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></svg>Locales
+    </button>
+  </div>
+  <h1 id="d-nombre"></h1>
+  <div id="d-tarjetas"></div>
+  <div id="d-propio" hidden>
+    <p class="propio">Añadido por ti</p>
+    <div class="acciones">
+      <button class="boton-gris" id="b-editar">Editar</button>
+      <button class="boton-gris rojo" id="b-borrar">Borrar</button>
+    </div>
+  </div>
+</main>
+
+<!-- Añadir / editar -->
+<div class="hoja-fondo" id="formulario" hidden>
+  <div class="hoja" role="dialog" aria-labelledby="f-titulo">
+    <div class="hoja-barra">
+      <button id="f-cancelar">Cancelar</button>
+      <h2 id="f-titulo">Nuevo local</h2>
+      <button id="f-guardar" class="fuerte">Guardar</button>
+    </div>
+    <div class="hoja-cuerpo">
+      <div class="grupo-titulo">Nombre</div>
+      <div class="grupo"><input id="f-nombre" placeholder="Nombre de la tienda" autocomplete="off" autocapitalize="words"></div>
+      <div class="grupo-pie">Es lo único obligatorio. Lo que no sepas, déjalo en blanco.</div>
+
+      <div class="grupo-titulo">Muelle</div>
+      <div class="segmentado" id="f-muelle"></div>
+
+      <div class="grupo-titulo">Planta</div>
+      <div class="segmentado" id="f-planta"></div>
+
+      <div class="grupo-titulo">Número de local</div>
+      <div class="grupo"><input id="f-numero" placeholder="Por ejemplo 2290-2300" autocomplete="off" autocapitalize="characters"></div>
+
+      <div class="grupo-titulo">Notas</div>
+      <div class="grupo"><textarea id="f-notas" placeholder="Opcional" rows="2"></textarea></div>
+    </div>
+  </div>
+</div>
+
+<!-- Horarios del cartel -->
+<div class="hoja-fondo" id="horarios" hidden>
+  <div class="hoja" role="dialog" aria-labelledby="h-titulo">
+    <div class="hoja-barra">
+      <span></span>
+      <h2 id="h-titulo">Horarios</h2>
+      <button id="h-cerrar" class="fuerte">Cerrar</button>
+    </div>
+    <div class="hoja-cuerpo">
+      <div class="grupo-titulo">Carga y descarga</div>
+      <div class="grupo filas"><p>06:00 a 12:00 h</p><p>22:00 a 00:00 h (21:00 h en invierno)</p></div>
+      <div class="grupo-titulo">Tirar basuras</div>
+      <div class="grupo filas"><p>06:00 a 11:00 h</p><p>15:00 a 17:30 h (solo restauración)</p><p>21:30 a 00:00 h (20:30 h en invierno)</p></div>
+      <div class="grupo-titulo">Cambio de contenedores</div>
+      <div class="grupo filas"><p>A partir de las 12:00 h</p></div>
+      <div class="grupo filas aviso"><p>⚠︎ Muelle E: reservado para la obra del centro comercial</p></div>
+    </div>
+  </div>
+</div>
+
+<script src="buscador.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
