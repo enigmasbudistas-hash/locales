@@ -1,11 +1,15 @@
 // Los locales del cartel vienen en locales.json; los que añades tú
 // se guardan en este iPhone (almacenamiento de la web app).
+// Los del cartel no se tocan: si borras uno se apunta como borrado,
+// y si lo corriges se guarda una copia tuya que lo sustituye.
 
 const CLAVE_PROPIOS = "locales-propios";
+const CLAVE_BORRADOS = "locales-cartel-borrados";
 const $ = id => document.getElementById(id);
 
 let delCartel = [];
 let propios = [];
+let borrados = new Set();
 let todos = [];
 let buscador = new Buscador([]);
 let muelles = [];
@@ -22,20 +26,34 @@ function cargarPropios() {
   }
 }
 
-function guardarPropios() {
+function cargarBorrados() {
+  try {
+    const lista = JSON.parse(localStorage.getItem(CLAVE_BORRADOS) || "[]");
+    return new Set(Array.isArray(lista) ? lista : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function guardarCambios() {
   try {
     localStorage.setItem(CLAVE_PROPIOS, JSON.stringify(propios));
+    localStorage.setItem(CLAVE_BORRADOS, JSON.stringify([...borrados]));
   } catch {
     alert("No se ha podido guardar en este iPhone.");
   }
 }
 
 function actualizar() {
-  todos = [...delCartel, ...propios].sort((a, b) => ordenAlfabetico.compare(a.nombre, b.nombre));
+  const corregidos = new Set(propios.map(p => p.reemplaza).filter(Boolean));
+  const visibles = delCartel.filter(l => !borrados.has(l.id) && !corregidos.has(l.id));
+  todos = [...visibles, ...propios].sort((a, b) => ordenAlfabetico.compare(a.nombre, b.nombre));
   buscador = new Buscador(todos);
 }
 
 const esPropio = local => propios.some(p => p.id === local.id);
+const origen = local =>
+  !esPropio(local) ? "Del cartel" : local.reemplaza ? "Corregido por ti" : "Añadido por ti";
 const buscarPorId = id => todos.find(l => l.id === id);
 
 function nuevoId() {
@@ -76,7 +94,7 @@ function pintarLista() {
         ${local.muelle ? etiqueta("camion", `Muelle ${local.muelle}`, "azul") : etiqueta("camion", "Muelle ?", "gris")}
         ${local.planta ? etiqueta("escalera", local.planta, "naranja") : etiqueta("escalera", "Planta ?", "gris")}
       </div>
-      ${esPropio(local) ? `<div class="fila-propio">${ICONOS.persona}Añadido por ti</div>` : ""}
+      ${esPropio(local) ? `<div class="fila-propio">${ICONOS.persona}${origen(local)}</div>` : ""}
       ${local.notas ? `<div class="fila-notas">${escapar(local.notas)}</div>` : ""}
     </button></li>`).join("");
 
@@ -87,6 +105,22 @@ function pintarLista() {
     $("b-anadir-buscado").textContent = `Añadir «${textoBusqueda.trim()}»`;
   }
   $("b-borrar-busqueda").hidden = !textoBusqueda;
+
+  $("b-recuperar").hidden = !vacia || !borrados.size;
+  $("b-recuperar").textContent = borrados.size === 1
+    ? "Recuperar 1 tienda del cartel borrada"
+    : `Recuperar ${borrados.size} tiendas del cartel borradas`;
+}
+
+function recuperarBorrados() {
+  const n = borrados.size;
+  if (!confirm(n === 1
+    ? "¿Volver a poner en la lista la tienda del cartel que borraste?"
+    : `¿Volver a poner en la lista las ${n} tiendas del cartel que borraste?`)) return;
+  borrados.clear();
+  guardarCambios();
+  actualizar();
+  pintarLista();
 }
 
 // ---------- Ficha ----------
@@ -109,7 +143,7 @@ function pintarDetalle(local) {
     tarjeta("Está en la planta", local.planta, "escalera", "naranja") +
     (local.numero ? tarjeta("Número de local", local.numero, "numero", "gris-fijo") : "") +
     (local.notas ? `<div class="notas"><h3>Notas</h3><p>${escapar(local.notas)}</p></div>` : "");
-  $("d-propio").hidden = !esPropio(local);
+  $("d-origen").textContent = origen(local);
 }
 
 // ---------- Navegación: #local/<id> abre la ficha ----------
@@ -192,21 +226,27 @@ const siHay = texto => texto.trim() || undefined;
 function guardarFormulario() {
   const nombre = $("f-nombre").value.trim();
   if (!nombre) return;
+  // Corregir una del cartel crea una copia tuya que la sustituye
+  const delCartelOriginal = editando && !esPropio(editando);
   const local = {
-    id: editando ? editando.id : nuevoId(),
+    id: editando && !delCartelOriginal ? editando.id : nuevoId(),
     nombre,
     muelle: siHay(seleccion.muelle),
     planta: siHay(seleccion.planta),
     numero: siHay($("f-numero").value),
     notas: siHay($("f-notas").value),
+    alias: editando?.alias,
+    reemplaza: delCartelOriginal ? editando.id : editando?.reemplaza,
   };
   const i = propios.findIndex(p => p.id === local.id);
   if (i >= 0) propios[i] = local; else propios.push(local);
-  guardarPropios();
+  guardarCambios();
   actualizar();
   cerrarHoja("formulario");
-  if (editando) mostrarVista();
-  else {
+  if (editando) {
+    if (delCartelOriginal) history.replaceState(null, "", `#local/${encodeURIComponent(local.id)}`);
+    mostrarVista();
+  } else {
     // Se limpia la búsqueda para que veas la tienda nueva en la lista
     textoBusqueda = "";
     $("busqueda").value = "";
@@ -216,10 +256,19 @@ function guardarFormulario() {
 
 function borrarAbierto() {
   const local = buscarPorId(idAbierto());
-  if (!local || !esPropio(local)) return;
-  if (!confirm(`¿Borrar «${local.nombre}»?`)) return;
-  propios = propios.filter(p => p.id !== local.id);
-  guardarPropios();
+  if (!local) return;
+  const deCartel = !esPropio(local) || local.reemplaza;
+  if (!confirm(deCartel
+    ? `¿Borrar «${local.nombre}» de la lista?\n\nSi te equivocas, puedes recuperarla al final de la lista.`
+    : `¿Borrar «${local.nombre}»?`)) return;
+  if (esPropio(local)) {
+    propios = propios.filter(p => p.id !== local.id);
+    // Si era una corrección, la original del cartel tampoco debe volver
+    if (local.reemplaza) borrados.add(local.reemplaza);
+  } else {
+    borrados.add(local.id);
+  }
+  guardarCambios();
   actualizar();
   volverALista();
 }
@@ -257,6 +306,7 @@ $("h-cerrar").addEventListener("click", () => cerrarHoja("horarios"));
 $("b-volver").addEventListener("click", volverALista);
 $("b-editar").addEventListener("click", () => abrirFormulario(buscarPorId(idAbierto())));
 $("b-borrar").addEventListener("click", borrarAbierto);
+$("b-recuperar").addEventListener("click", recuperarBorrados);
 $("f-cancelar").addEventListener("click", () => cerrarHoja("formulario"));
 $("f-guardar").addEventListener("click", guardarFormulario);
 $("f-nombre").addEventListener("input", actualizarBotonGuardar);
@@ -279,11 +329,17 @@ async function arrancar() {
   try {
     const respuesta = await fetch("locales.json");
     const lista = await respuesta.json();
-    delCartel = lista.map((l, i) => ({ ...l, id: `cartel-${i}` }));
+    // El id sale de los datos (no de la posición) para que siga valiendo
+    // aunque se añadan o reordenen locales en locales.json
+    delCartel = lista.map(l => ({
+      ...l,
+      id: `cartel:${[l.nombre, l.numero, l.muelle, l.planta].map(v => v || "").join("|")}`,
+    }));
   } catch {
     delCartel = [];
   }
   propios = cargarPropios();
+  borrados = cargarBorrados();
   // En el cartel solo salen A, B y C, pero el centro tiene del A al E
   muelles = [...new Set(["A", "B", "C", "D", "E", ...delCartel.map(l => l.muelle).filter(Boolean)])].sort();
   plantas = [...new Set(delCartel.map(l => l.planta).filter(Boolean))].sort();

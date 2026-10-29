@@ -2,7 +2,7 @@
 // Siempre responde con la copia guardada y, si hay internet, la actualiza
 // por detrás: los cambios se ven la siguiente vez que se abre.
 
-const CACHE = "locales-v1";
+const CACHE = "locales-v2";
 const ARCHIVOS = [
   "./",
   "index.html",

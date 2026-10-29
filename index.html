@@ -38,6 +38,7 @@
     <button id="b-borrar-busqueda" aria-label="Borrar búsqueda" hidden>×</button>
   </div>
   <ul id="lista"></ul>
+  <button class="recuperar" id="b-recuperar" hidden></button>
   <div id="sin-resultados" hidden>
     <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
     <h2 id="sin-titulo"></h2>
@@ -55,8 +56,8 @@
   </div>
   <h1 id="d-nombre"></h1>
   <div id="d-tarjetas"></div>
-  <div id="d-propio" hidden>
-    <p class="propio">Añadido por ti</p>
+  <div>
+    <p class="propio" id="d-origen"></p>
     <div class="acciones">
       <button class="boton-gris" id="b-editar">Editar</button>
       <button class="boton-gris rojo" id="b-borrar">Borrar</button>
